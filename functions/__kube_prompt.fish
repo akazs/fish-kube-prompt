@@ -4,7 +4,15 @@
 
 function __kube_ps_update_cache
   function __kube_ps_cache_context
-    set -l ctx (kubectl config current-context 2>/dev/null)
+    set -l __raw_ctx (kubectl config current-context 2>/dev/null)
+    switch "$__raw_ctx"
+      case "gke_*" # GKE
+        set -f ctx (echo "$__raw_ctx" | sed "s/gke_.*_\(.*\)/\1/")
+      case "arn:aws:eks:*" # EKS
+        set -f ctx (echo "$__raw_ctx" | sed "s/arn:aws:eks:.*\/\(.*\)/\1/")
+      case "*"
+        set -f ctx "$__raw_ctx"
+    end
     if test $status -eq 0
       set -g __kube_ps_context "$ctx"
     else
